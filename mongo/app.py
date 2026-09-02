@@ -1,11 +1,23 @@
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from pymongo import MongoClient
+from pymongo.server_api import ServerApi
+from dotenv import load_dotenv
 from datetime import datetime
 import numpy as np
 from collections import Counter
+
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
+
+# --- CONFIGURATION MongoDB Atlas ---
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    st.error("❌ La variable d'environnement MONGODB_URI est manquante. Vérifiez votre fichier .env")
+    st.stop()
 
 # Mappages pour traduire les codes en libellés lisibles
 LUM_MAP = {1: 'Plein jour', 2: 'Crépuscule', 3: 'Nuit (éclairée)', 4: 'Nuit (non éclairée)', 5: 'Nuit (mauvaise visibilité)'}
@@ -139,9 +151,13 @@ st.markdown("""
 # --- CONFIGURATION MongoDB ---
 @st.cache_resource
 def get_mongo_connection():
-    """Établit la connexion à MongoDB"""
+    """Établit la connexion à MongoDB Atlas"""
     try:
-        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        client = MongoClient(
+            MONGODB_URI,
+            server_api=ServerApi("1"),
+            serverSelectionTimeoutMS=10000
+        )
         client.admin.command('ping')
         return client
     except Exception as e:
@@ -150,9 +166,13 @@ def get_mongo_connection():
 
 @st.cache_data(ttl=300)
 def load_data_from_mongo():
-    """Charge les données depuis MongoDB"""
+    """Charge les données depuis MongoDB Atlas"""
     try:
-        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        client = MongoClient(
+            MONGODB_URI,
+            server_api=ServerApi("1"),
+            serverSelectionTimeoutMS=10000
+        )
         client.admin.command('ping')
         
         db = client["db_accidents_corporels"]
